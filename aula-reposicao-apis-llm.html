@@ -1,0 +1,1635 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>IA M1-U4 — Exploração de APIs de Modelos de Linguagem</title>
+
+  <!-- Reveal.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.css" />
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/theme/white.min.css" />
+  <!-- Highlight.js -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" />
+  <!-- Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;800&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+
+  <style>
+    /* ════════════════════════════════════════════
+       DESIGN SYSTEM — Academic Edition
+       Inspirado no portfólio de Anna Kuznetsova:
+       paleta neutra quente, tipografia com serifa,
+       layout de publicação científica
+    ════════════════════════════════════════════ */
+    :root {
+      /* Cores — extraídas do estilo SaaS/Minimal Portfolio */
+      --bg:            #E8E3D8;   /* parchment escurecido */
+      --bg-white:      #F0EBE0;   /* superfície principal */
+      --bg-alt:        #DDD7CA;   /* superfície alternada */
+      --border:        #C4BDB0;   /* borda neutra quente */
+      --border-light:  #D4CEBE;   /* borda suave */
+
+      --text-primary:  #1A1714;   /* quase-preto quente */
+      --text-secondary:#5A5450;   /* cinza-médio quente */
+      --text-muted:    #9B9490;   /* muted */
+
+      /* Acento principal — azul académico profundo */
+      --accent:        #1B4E8C;
+      --accent-light:  #E8EFF7;
+      --accent-mid:    #2D6AB5;
+
+      /* Acento secundário — âmbar/terracota (Anna usa warm tones) */
+      --amber:         #B85C1E;
+      --amber-light:   #F5EBE3;
+      --amber-mid:     #D4742A;
+
+      /* Acento terciário — verde-sálvia */
+      --sage:          #2A6048;
+      --sage-light:    #E4EFE9;
+
+      /* Tipografia */
+      --font-serif:    'Playfair Display', Georgia, serif;
+      --font-sans:     'Inter', system-ui, sans-serif;
+      --font-mono:     'JetBrains Mono', 'Courier New', monospace;
+
+      /* Spacing / Shape */
+      --radius-sm:     4px;
+      --radius-md:     8px;
+      --radius-lg:     12px;
+      --shadow-sm:     0 1px 3px rgba(26,23,20,0.07), 0 1px 2px rgba(26,23,20,0.04);
+      --shadow-md:     0 4px 12px rgba(26,23,20,0.08), 0 2px 4px rgba(26,23,20,0.04);
+    }
+
+    /* ── Reveal overrides ──────────────────────── */
+    .reveal-viewport { background: var(--bg); }
+
+    .reveal .slides section {
+      font-family: var(--font-sans);
+      text-align: left;
+      padding: 0 44px;
+      color: var(--text-primary);
+    }
+
+    .reveal h1, .reveal h2, .reveal h3, .reveal h4 {
+      font-family: var(--font-serif);
+      text-transform: none;
+      letter-spacing: -0.01em;
+      color: var(--text-primary);
+      font-weight: 700;
+    }
+
+    .reveal .controls { color: var(--accent); }
+    .reveal .progress span { background: var(--accent); }
+    .reveal .slide-number {
+      font-family: var(--font-sans);
+      font-size: .55rem;
+      background: var(--bg-alt);
+      color: var(--text-muted);
+      border-radius: 4px;
+      padding: 2px 6px;
+    }
+
+    /* ════════════════════════════════════════════
+       COMPONENTES
+    ════════════════════════════════════════════ */
+
+    /* ── Regra decorativa (estilo publicação) ── */
+    .rule {
+      width: 100%;
+      height: 1px;
+      background: var(--border);
+      margin: 20px 0;
+    }
+
+    .rule-accent {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 24px;
+    }
+    .rule-accent::before {
+      content: '';
+      display: block;
+      width: 36px;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 2px;
+      margin-right: 8px;
+    }
+    .rule-accent::after {
+      content: '';
+      display: block;
+      flex: 1;
+      height: 1px;
+      background: var(--border);
+    }
+
+    /* ── Etiqueta de seção (estilo periódico) ── */
+    .section-tag {
+      font-family: var(--font-sans);
+      font-size: .6rem;
+      font-weight: 600;
+      letter-spacing: .15em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .section-tag::after {
+      content: '';
+      display: block;
+      width: 24px;
+      height: 1px;
+      background: var(--accent);
+      opacity: .5;
+    }
+
+    /* ── Cabeçalho de slide ─────────────────── */
+    .slide-header {
+      margin-bottom: 22px;
+    }
+    .slide-header h2 {
+      font-size: 1.5rem !important;
+      font-weight: 700 !important;
+      color: var(--text-primary) !important;
+      margin: 6px 0 0 !important;
+      line-height: 1.2;
+    }
+    .slide-header p {
+      font-size: .75rem;
+      color: var(--text-secondary);
+      margin: 4px 0 0;
+      font-family: var(--font-sans);
+    }
+
+    /* ── Cards ─────────────────────────────── */
+    .card-grid { display: grid; gap: 14px; margin-top: 16px; }
+    .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+
+    .card {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px 20px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+    }
+
+    .card-accent-top {
+      position: absolute;
+      top: 0; left: 20px;
+      width: 32px; height: 2px;
+      border-radius: 0 0 2px 2px;
+    }
+
+    .card.blue  .card-accent-top { background: var(--accent); }
+    .card.amber .card-accent-top { background: var(--amber); }
+    .card.sage  .card-accent-top { background: var(--sage); }
+    .card.neutral .card-accent-top { background: var(--text-secondary); }
+
+    .card-label {
+      font-family: var(--font-sans);
+      font-size: .6rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .card-title {
+      font-family: var(--font-serif);
+      font-size: .95rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      line-height: 1.3;
+    }
+
+    .card-body {
+      font-size: .78rem;
+      color: var(--text-secondary);
+      line-height: 1.65;
+    }
+
+    .card-icon {
+      font-size: 1.3rem;
+      margin-bottom: 10px;
+      display: block;
+    }
+
+    /* ── Destaque / callout ─────────────────── */
+    .callout {
+      background: var(--accent-light);
+      border-left: 3px solid var(--accent);
+      border-radius: 0 var(--radius-md) var(--radius-md) 0;
+      padding: 14px 18px;
+      font-size: .83rem;
+      color: var(--text-primary);
+      line-height: 1.7;
+      margin: 14px 0;
+    }
+
+    .callout.amber {
+      background: var(--amber-light);
+      border-left-color: var(--amber);
+    }
+
+    .callout.sage {
+      background: var(--sage-light);
+      border-left-color: var(--sage);
+    }
+
+    .callout strong { font-weight: 600; }
+
+    /* ── Código ─────────────────────────────── */
+    .code-block {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      margin: 12px 0;
+      box-shadow: var(--shadow-sm);
+    }
+
+    .code-block-bar {
+      background: var(--bg-alt);
+      border-bottom: 1px solid var(--border);
+      padding: 7px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-family: var(--font-sans);
+      font-size: .62rem;
+      color: var(--text-muted);
+    }
+
+    .code-dots { display: flex; gap: 5px; }
+    .code-dots span {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      background: var(--border);
+    }
+
+    .code-block pre {
+      margin: 0 !important;
+      padding: 14px 16px !important;
+      background: transparent !important;
+      border: none !important;
+      border-radius: 0 !important;
+    }
+
+    .code-block code {
+      font-family: var(--font-mono) !important;
+      font-size: .7rem !important;
+    }
+
+    /* ── Lista acadêmica ────────────────────── */
+    .a-list { list-style: none; padding: 0; margin: 0; }
+    .a-list li {
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border-light);
+      font-size: .82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .a-list li:last-child { border-bottom: none; }
+    .a-list-marker {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      margin-top: 7px;
+      flex-shrink: 0;
+      background: var(--accent);
+    }
+    .a-list-marker.amber { background: var(--amber); }
+    .a-list-marker.sage  { background: var(--sage); }
+
+    /* ── Numeração sequencial ───────────────── */
+    .n-list { counter-reset: nl; list-style: none; padding: 0; margin: 0; }
+    .n-list li {
+      counter-increment: nl;
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 9px 0;
+      border-bottom: 1px solid var(--border-light);
+      font-size: .82rem;
+      color: var(--text-secondary);
+      line-height: 1.6;
+    }
+    .n-list li:last-child { border-bottom: none; }
+    .n-list li::before {
+      content: counter(nl, decimal-leading-zero);
+      font-family: var(--font-mono);
+      font-size: .65rem;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid rgba(27,78,140,.15);
+      min-width: 28px;
+      height: 22px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    /* ── Fluxo ──────────────────────────────── */
+    .flow {
+      display: flex;
+      align-items: stretch;
+      gap: 0;
+      margin: 20px 0;
+      flex-wrap: nowrap;
+    }
+    .flow-step {
+      flex: 1;
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      padding: 14px 12px;
+      text-align: center;
+      font-size: .72rem;
+      color: var(--text-secondary);
+      line-height: 1.4;
+      position: relative;
+    }
+    .flow-step:first-child { border-radius: var(--radius-md) 0 0 var(--radius-md); }
+    .flow-step:last-child  { border-radius: 0 var(--radius-md) var(--radius-md) 0; }
+    .flow-step + .flow-step { border-left: none; }
+    .flow-step .step-icon  { font-size: 1.2rem; margin-bottom: 6px; display: block; }
+    .flow-step .step-label { font-weight: 600; color: var(--text-primary); font-size: .74rem; }
+
+    .flow-step::after {
+      content: '→';
+      position: absolute;
+      right: -14px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: .85rem;
+      color: var(--text-muted);
+      z-index: 2;
+    }
+    .flow-step:last-child::after { display: none; }
+
+    /* ── Comparativo ────────────────────────── */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 14px; }
+    .compare-panel {
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+    }
+    .compare-panel h4 {
+      font-family: var(--font-sans) !important;
+      font-size: .78rem !important;
+      font-weight: 600 !important;
+      margin-bottom: 12px !important;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-primary) !important;
+    }
+    .compare-panel.bad  { border-top: 2px solid #C94A3C; }
+    .compare-panel.good { border-top: 2px solid var(--sage); }
+
+    /* ── Tag ────────────────────────────────── */
+    .tag {
+      display: inline-block;
+      font-family: var(--font-sans);
+      font-size: .58rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      padding: 3px 9px;
+      border-radius: 3px;
+      margin-right: 5px;
+      margin-bottom: 5px;
+    }
+    .tag.blue   { background: var(--accent-light); color: var(--accent); border: 1px solid rgba(27,78,140,.18); }
+    .tag.amber  { background: var(--amber-light);  color: var(--amber);  border: 1px solid rgba(184,92,30,.18); }
+    .tag.sage   { background: var(--sage-light);   color: var(--sage);   border: 1px solid rgba(42,96,72,.18); }
+    .tag.neutral{ background: var(--bg-alt);        color: var(--text-secondary); border: 1px solid var(--border); }
+
+    /* ── Layout 2 colunas ───────────────────── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 22px; align-items: start; }
+
+    /* ════════════════════════════════════════════
+       SLIDES ESPECIAIS
+    ════════════════════════════════════════════ */
+
+    /* ── Capa ──────────────────────────────── */
+    .slide-cover {
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      align-items: flex-start;
+      height: 100%;
+      position: relative;
+    }
+
+    .cover-overline {
+      font-family: var(--font-sans);
+      font-size: .62rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .cover-overline::before {
+      content: '';
+      display: block;
+      width: 28px; height: 1px;
+      background: var(--accent);
+    }
+
+    .cover-title {
+      font-family: var(--font-serif) !important;
+      font-size: 2.6rem !important;
+      font-weight: 800 !important;
+      line-height: 1.1 !important;
+      color: var(--text-primary) !important;
+      margin-bottom: 18px !important;
+      max-width: 680px;
+    }
+
+    .cover-subtitle {
+      font-size: .9rem !important;
+      color: var(--text-secondary) !important;
+      line-height: 1.7;
+      max-width: 560px;
+      margin-bottom: 36px !important;
+    }
+
+    .cover-meta {
+      display: flex;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding-top: 24px;
+      border-top: 1px solid var(--border);
+      width: 100%;
+    }
+
+    .cover-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .cover-meta-label {
+      font-size: .56rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .cover-meta-value {
+      font-size: .82rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    /* Ornamento geométrico da capa */
+    .cover-ornament {
+      position: absolute;
+      top: 0; right: -44px;
+      width: 340px; height: 100%;
+      overflow: hidden;
+      pointer-events: none;
+    }
+
+    .cover-ornament svg { width: 100%; height: 100%; }
+
+    /* ── Capítulo / seção ───────────────────── */
+    .slide-chapter {
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .chapter-bg {
+      position: absolute;
+      inset: 0;
+      background: var(--accent);
+      z-index: 0;
+    }
+
+    .chapter-bg-pattern {
+      position: absolute;
+      inset: 0;
+      background-image: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 39px,
+        rgba(255,255,255,.05) 39px,
+        rgba(255,255,255,.05) 40px
+      ),
+      repeating-linear-gradient(
+        90deg,
+        transparent,
+        transparent 39px,
+        rgba(255,255,255,.05) 39px,
+        rgba(255,255,255,.05) 40px
+      );
+      z-index: 1;
+    }
+
+    .chapter-content { position: relative; z-index: 2; }
+
+    .chapter-eyebrow {
+      font-family: var(--font-sans);
+      font-size: .6rem;
+      font-weight: 600;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.6);
+      margin-bottom: 16px;
+    }
+
+    .chapter-num {
+      font-family: var(--font-mono);
+      font-size: 5rem;
+      font-weight: 400;
+      color: rgba(255,255,255,.08);
+      line-height: 1;
+      position: absolute;
+      top: 20px; right: 0;
+      letter-spacing: -.05em;
+    }
+
+    .chapter-title {
+      font-family: var(--font-serif) !important;
+      font-size: 2.4rem !important;
+      font-weight: 700 !important;
+      color: #fff !important;
+      line-height: 1.15 !important;
+      margin-bottom: 16px !important;
+    }
+
+    .chapter-desc {
+      font-size: .88rem !important;
+      color: rgba(255,255,255,.7) !important;
+      max-width: 540px;
+      line-height: 1.7;
+    }
+
+    /* Variantes de cor para capítulos */
+    .chapter-bg.amber { background: var(--amber); }
+    .chapter-bg.sage  { background: var(--sage); }
+    .chapter-bg.dark  { background: #1A1714; }
+
+    /* ── Slide de encerramento ──────────────── */
+    .slide-end {
+      display: flex !important;
+      flex-direction: column;
+      justify-content: center;
+      height: 100%;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide-end .end-bg {
+      position: absolute;
+      inset: 0;
+      background: #1A1714;
+      z-index: 0;
+    }
+
+    .slide-end-content { position: relative; z-index: 1; }
+
+    .end-overline {
+      font-family: var(--font-sans);
+      font-size: .6rem;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.4);
+      margin-bottom: 18px;
+    }
+
+    .end-title {
+      font-family: var(--font-serif) !important;
+      font-size: 2.8rem !important;
+      font-weight: 800 !important;
+      color: #fff !important;
+      line-height: 1.1 !important;
+      margin-bottom: 16px !important;
+    }
+
+    .end-subtitle {
+      font-size: .88rem !important;
+      color: rgba(255,255,255,.55) !important;
+      max-width: 500px;
+      line-height: 1.7;
+      margin-bottom: 36px !important;
+    }
+
+    .end-meta {
+      display: flex;
+      gap: 20px;
+      flex-wrap: wrap;
+      padding-top: 24px;
+      border-top: 1px solid rgba(255,255,255,.1);
+    }
+
+    .end-meta-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+
+    .end-meta-label {
+      font-size: .55rem;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,.35);
+    }
+
+    .end-meta-value {
+      font-size: .8rem;
+      font-weight: 500;
+      color: rgba(255,255,255,.8);
+    }
+
+    /* ── Tabela de conteúdo ─────────────────── */
+    .toc-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 16px; }
+
+    .toc-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      padding: 14px 16px;
+      background: var(--bg-white);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+    }
+
+    .toc-num {
+      font-family: var(--font-mono);
+      font-size: .7rem;
+      font-weight: 500;
+      color: var(--accent);
+      background: var(--accent-light);
+      border: 1px solid rgba(27,78,140,.12);
+      min-width: 30px;
+      height: 24px;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      margin-top: 1px;
+    }
+
+    .toc-item-title {
+      font-family: var(--font-serif);
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 4px;
+    }
+
+    .toc-item-desc {
+      font-size: .72rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+  </style>
+</head>
+<body>
+<div class="reveal">
+<div class="slides">
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 1 — Capa
+══════════════════════════════════════════════ -->
+<section class="slide-cover">
+  <!-- Ornamento geométrico lateral -->
+  <div class="cover-ornament">
+    <svg viewBox="0 0 340 650" fill="none" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMid slice">
+      <rect x="80" y="60"  width="220" height="220" rx="8" stroke="#D9D3C7" stroke-width="1" fill="none"/>
+      <rect x="120" y="100" width="140" height="140" rx="6" stroke="#D9D3C7" stroke-width="1" fill="none"/>
+      <rect x="160" y="140" width="60"  height="60"  rx="4" fill="#EEE9DF"/>
+      <circle cx="190" cy="170" r="18" stroke="#1B4E8C" stroke-width="1.5" fill="none"/>
+      <line x1="80" y1="340" x2="300" y2="340" stroke="#D9D3C7" stroke-width="1"/>
+      <rect x="100" y="380" width="180" height="120" rx="6" stroke="#D9D3C7" stroke-width="1" fill="none"/>
+      <rect x="120" y="400" width="80"  height="6"  rx="3" fill="#EEE9DF"/>
+      <rect x="120" y="416" width="130" height="6" rx="3" fill="#EEE9DF"/>
+      <rect x="120" y="432" width="100" height="6" rx="3" fill="#EEE9DF"/>
+      <rect x="120" y="448" width="50"  height="6" rx="3" fill="#1B4E8C" opacity=".3"/>
+      <circle cx="260" cy="540" r="60" stroke="#D9D3C7" stroke-width="1" fill="none"/>
+      <circle cx="260" cy="540" r="40" stroke="#EEE9DF" stroke-width="1" fill="none"/>
+    </svg>
+  </div>
+
+  <div class="cover-overline">IA · Módulo 1 · Unidade 4</div>
+  <h1 class="cover-title">Exploração de APIs de Modelos de Linguagem</h1>
+  <p class="cover-subtitle">
+    Uma introdução prática à integração de grandes modelos de linguagem via APIs,
+    com exemplos no Google Colab e construção de interfaces interativas com Gradio.
+  </p>
+
+  <div class="cover-meta">
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Aula de reposição — 29/04</span>
+      <span class="cover-meta-value">Ranyer Paiva</span>
+    </div>
+    <div class="cover-meta-item">
+      <span class="cover-meta-label">Ferramentas</span>
+      <span class="cover-meta-value">Google Colab · Gradio · Gemini API</span>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 2 — Sumário
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Sumário</div>
+    <h2>Conteúdo da aula</h2>
+    <p>Quatro módulos progressivos — do conceito à aplicação prática</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="toc-grid">
+    <div class="toc-item">
+      <div class="toc-num">01</div>
+      <div>
+        <div class="toc-item-title">O que é uma API de LLM?</div>
+        <div class="toc-item-desc">Conceituação, arquitetura cliente-servidor e principais provedores do mercado.</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">02</div>
+      <div>
+        <div class="toc-item-title">Chave de API &amp; Google Colab</div>
+        <div class="toc-item-desc">Autenticação, segurança de credenciais e configuração do ambiente de desenvolvimento.</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">03</div>
+      <div>
+        <div class="toc-item-title">Primeira chamada à API</div>
+        <div class="toc-item-desc">Requisições, parâmetros de geração, engenharia de prompt e chat com histórico.</div>
+      </div>
+    </div>
+    <div class="toc-item">
+      <div class="toc-num">04</div>
+      <div>
+        <div class="toc-item-title">Interface web com Gradio</div>
+        <div class="toc-item-desc">Construção de aplicações interativas e publicação com link público compartilhável.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 3 — Capítulo 1
+══════════════════════════════════════════════ -->
+<section class="slide-chapter">
+  <div class="chapter-bg"></div>
+  <div class="chapter-bg-pattern"></div>
+  <div class="chapter-num">01</div>
+  <div class="chapter-content">
+    <div class="chapter-eyebrow">Capítulo 1 de 4</div>
+    <h2 class="chapter-title">O que é uma API<br>de LLM?</h2>
+    <p class="chapter-desc">Compreendendo a arquitetura que conecta aplicações a modelos de linguagem de grande escala.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 4 — LLM: conceito
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Fundamentos</div>
+    <h2>Modelos de Linguagem de Grande Escala</h2>
+    <p>Large Language Models — LLMs</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="callout">
+    Um <strong>LLM</strong> (Large Language Model) é um modelo de IA treinado com bilhões de parâmetros e vastos corpora textuais, capaz de compreender e gerar linguagem natural com alta fidelidade semântica.
+  </div>
+
+  <div class="card-grid cols-3" style="margin-top: 18px;">
+    <div class="card blue">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">📚</span>
+      <div class="card-label">Treinamento</div>
+      <div class="card-title">Pré-treinamento massivo</div>
+      <div class="card-body">Bilhões de parâmetros ajustados sobre trilhões de tokens de texto — livros, artigos, código e web.</div>
+    </div>
+    <div class="card amber">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">💬</span>
+      <div class="card-label">Capacidades</div>
+      <div class="card-title">Tarefas de linguagem</div>
+      <div class="card-body">Sumarização, tradução, geração de código, Q&amp;A, classificação e raciocínio em cadeia.</div>
+    </div>
+    <div class="card sage">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">🏢</span>
+      <div class="card-label">Exemplos</div>
+      <div class="card-title">Modelos principais</div>
+      <div class="card-body">GPT-4 (OpenAI), Gemini (Google), Claude (Anthropic), Llama (Meta), Mistral.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 5 — O que é uma API?
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Arquitetura</div>
+    <h2>Interface de Programação de Aplicações</h2>
+    <p>Application Programming Interface — API</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="callout amber" style="margin-bottom: 20px;">
+    📬 Analogia: a API funciona como um <strong>garçom de restaurante</strong>. Seu código (cliente) faz o pedido, a API (garçom) transmite ao servidor (modelo de IA) e retorna a resposta formatada.
+  </div>
+
+  <div class="flow">
+    <div class="flow-step">
+      <span class="step-icon">👨‍💻</span>
+      <div class="step-label">Código cliente</div>
+      <div>Python / JS</div>
+    </div>
+    <div class="flow-step">
+      <span class="step-icon">📡</span>
+      <div class="step-label">Requisição HTTP</div>
+      <div>POST + JSON</div>
+    </div>
+    <div class="flow-step">
+      <span class="step-icon">🌐</span>
+      <div class="step-label">API Gateway</div>
+      <div>Auth + Rate limit</div>
+    </div>
+    <div class="flow-step">
+      <span class="step-icon">🤖</span>
+      <div class="step-label">Modelo de IA</div>
+      <div>Inferência</div>
+    </div>
+    <div class="flow-step">
+      <span class="step-icon">✅</span>
+      <div class="step-label">Resposta JSON</div>
+      <div>texto gerado</div>
+    </div>
+  </div>
+
+  <p style="font-size:.78rem; color: var(--text-muted); margin-top: 14px; font-style: italic;">
+    O modelo roda em servidores de alta capacidade do provedor — não é necessário instalação local.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 6 — Principais APIs
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Mercado</div>
+    <h2>Principais provedores de APIs de LLM</h2>
+    <p>Panorama dos ecossistemas disponíveis em 2024–2025</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="card-grid cols-2">
+    <div class="card blue">
+      <div class="card-accent-top"></div>
+      <div class="card-label">OpenAI</div>
+      <div class="card-title">GPT-4o / GPT-3.5 Turbo</div>
+      <div class="card-body">
+        Referência de mercado. Excelente para chat, geração de código e tarefas criativas.
+        Camada gratuita limitada; uso intenso requer plano pago.<br><br>
+        <span class="tag amber">Pago</span><span class="tag blue">REST API</span>
+      </div>
+    </div>
+    <div class="card sage">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Google</div>
+      <div class="card-title">Gemini 1.5 Flash / Pro</div>
+      <div class="card-body">
+        Camada gratuita generosa via Google AI Studio. Integração nativa com o ecossistema Google / Colab.
+        Ideal para projetos acadêmicos.<br><br>
+        <span class="tag sage">Gratuito</span><span class="tag blue">REST API</span>
+      </div>
+    </div>
+    <div class="card neutral">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Anthropic</div>
+      <div class="card-title">Claude 3 (Haiku / Sonnet)</div>
+      <div class="card-body">
+        Destaque em raciocínio e seguimento de instruções longas. API bem documentada para produção.<br><br>
+        <span class="tag amber">Pago</span><span class="tag blue">REST API</span>
+      </div>
+    </div>
+    <div class="card amber">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Groq / Together AI</div>
+      <div class="card-title">Llama 3 / Mistral</div>
+      <div class="card-body">
+        Modelos open-source com APIs gratuitas de alta velocidade. Excelente para experimentação sem custo.<br><br>
+        <span class="tag sage">Gratuito</span><span class="tag sage">Open Source</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 7 — Capítulo 2
+══════════════════════════════════════════════ -->
+<section class="slide-chapter">
+  <div class="chapter-bg amber"></div>
+  <div class="chapter-bg-pattern"></div>
+  <div class="chapter-num">02</div>
+  <div class="chapter-content">
+    <div class="chapter-eyebrow">Capítulo 2 de 4</div>
+    <h2 class="chapter-title">Chave de API &amp;<br>Google Colab</h2>
+    <p class="chapter-desc">Autenticação segura e configuração do ambiente de desenvolvimento gratuito na nuvem.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 8 — API Key
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Autenticação</div>
+    <h2>Chave de API — API Key</h2>
+    <p>Credencial de autenticação para acesso ao serviço</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="callout" style="margin-bottom: 18px;">
+    🔑 A <strong>API Key</strong> é um token secreto que identifica e autoriza o acesso à API. Funciona como uma senha: sem ela, o servidor rejeita a requisição com erro <code>401 Unauthorized</code>.
+  </div>
+
+  <div class="two-col">
+    <div>
+      <p style="font-family: var(--font-sans); font-size:.75rem; font-weight:600; color:var(--text-secondary); letter-spacing:.08em; text-transform:uppercase; margin-bottom: 10px;">Boas práticas de segurança</p>
+      <ul class="a-list">
+        <li><div class="a-list-marker"></div> Nunca inclua a chave diretamente no código-fonte</li>
+        <li><div class="a-list-marker"></div> Não suba arquivos com a chave para repositórios públicos</li>
+        <li><div class="a-list-marker"></div> Utilize variáveis de ambiente ou Secrets do Colab</li>
+        <li><div class="a-list-marker"></div> Revogue e regenere se houver suspeita de vazamento</li>
+        <li><div class="a-list-marker sage"></div> Monitore o uso no painel do provedor</li>
+      </ul>
+    </div>
+    <div>
+      <p style="font-family: var(--font-sans); font-size:.75rem; font-weight:600; color:var(--text-secondary); letter-spacing:.08em; text-transform:uppercase; margin-bottom: 10px;">Usando Secrets no Colab</p>
+      <div class="code-block">
+        <div class="code-block-bar">
+          <div class="code-dots"><span></span><span></span><span></span></div>
+          Google Colab — Painel de Secrets
+        </div>
+        <pre><code class="language-python"># Menu lateral → ícone 🔑 "Secrets"
+# Nome: GEMINI_API_KEY
+# Valor: sua-chave-aqui
+
+# No código:
+from google.colab import userdata
+API_KEY = userdata.get('GEMINI_API_KEY')</code></pre>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 9 — Google Colab
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Ambiente</div>
+    <h2>Google Colaboratory</h2>
+    <p>Plataforma de notebooks Python hospedada na nuvem — gratuita e sem configuração local</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="card-grid cols-3">
+    <div class="card blue">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">🆓</span>
+      <div class="card-label">Custo</div>
+      <div class="card-title">Gratuito</div>
+      <div class="card-body">CPU, GPU e TPU disponíveis sem instalação. Ideal para experimentação acadêmica.</div>
+    </div>
+    <div class="card sage">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">📓</span>
+      <div class="card-label">Formato</div>
+      <div class="card-title">Jupyter Notebooks</div>
+      <div class="card-body">Células de código, texto (Markdown) e saídas misturados em um único documento interativo.</div>
+    </div>
+    <div class="card amber">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">📦</span>
+      <div class="card-label">Bibliotecas</div>
+      <div class="card-title">Pré-instaladas</div>
+      <div class="card-body">Python, NumPy, Pandas, Matplotlib e centenas de pacotes prontos para importar.</div>
+    </div>
+  </div>
+
+  <div class="callout sage" style="margin-top: 18px;">
+    🌐 Acesso em: <strong>colab.research.google.com</strong> — faça login com sua conta Google e clique em <em>"Novo notebook"</em> para começar imediatamente.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 10 — Capítulo 3
+══════════════════════════════════════════════ -->
+<section class="slide-chapter">
+  <div class="chapter-bg sage"></div>
+  <div class="chapter-bg-pattern"></div>
+  <div class="chapter-num">03</div>
+  <div class="chapter-content">
+    <div class="chapter-eyebrow">Capítulo 3 de 4</div>
+    <h2 class="chapter-title">Primeira chamada<br>à API</h2>
+    <p class="chapter-desc">Implementação passo a passo — da instalação da biblioteca à geração de respostas pelo modelo.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 11 — Instalação
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Passo 1</div>
+    <h2>Instalação e configuração</h2>
+    <p>Preparando o ambiente para a API do Google Gemini (camada gratuita)</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="code-block">
+    <div class="code-block-bar">
+      <div class="code-dots"><span></span><span></span><span></span></div>
+      Célula 1 — Instalar dependências
+    </div>
+    <pre><code class="language-python"># Instala a biblioteca oficial do Google Generative AI
+!pip install -q google-generativeai</code></pre>
+  </div>
+
+  <div class="code-block" style="margin-top: 10px;">
+    <div class="code-block-bar">
+      <div class="code-dots"><span></span><span></span><span></span></div>
+      Célula 2 — Autenticação e configuração
+    </div>
+    <pre><code class="language-python">import google.generativeai as genai
+from google.colab import userdata
+
+# Recupera a API Key dos Secrets do Colab (não fica exposta no código)
+API_KEY = userdata.get('GEMINI_API_KEY')
+
+# Configura a biblioteca com a chave de autenticação
+genai.configure(api_key=API_KEY)
+
+print("Configuração concluída com sucesso.")</code></pre>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 12 — Primeira requisição
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Passo 2</div>
+    <h2>Realizando a primeira requisição</h2>
+    <p>Enviando um prompt e recebendo a resposta do modelo</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="code-block">
+    <div class="code-block-bar">
+      <div class="code-dots"><span></span><span></span><span></span></div>
+      Célula 3 — Geração de texto
+    </div>
+    <pre><code class="language-python"># 1. Seleciona o modelo a utilizar
+modelo = genai.GenerativeModel("gemini-1.5-flash")
+
+# 2. Define o prompt (instrução enviada ao modelo)
+prompt = "Explique o conceito de Inteligência Artificial em três frases objetivas."
+
+# 3. Envia a requisição e aguarda a resposta
+resposta = modelo.generate_content(prompt)
+
+# 4. Exibe o texto gerado
+print(resposta.text)</code></pre>
+  </div>
+
+  <div class="callout" style="margin-top: 14px;">
+    💡 O método <code>generate_content()</code> encapsula toda a requisição HTTP — ele serializa o prompt, envia ao servidor e deserializa a resposta automaticamente.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 13 — Engenharia de Prompt
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Conceito-chave</div>
+    <h2>Engenharia de Prompt</h2>
+    <p>A qualidade da instrução determina diretamente a qualidade da resposta</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="compare">
+    <div class="compare-panel bad">
+      <h4>❌ Prompt impreciso</h4>
+      <div class="code-block">
+        <pre><code class="language-python">prompt = "Fale sobre clima"</code></pre>
+      </div>
+      <p style="font-size:.76rem; color:var(--text-secondary); margin-top: 10px; line-height: 1.6;">
+        Sem contexto, escopo ou formato definido. A resposta tende a ser genérica e pouco utilizável.
+      </p>
+    </div>
+    <div class="compare-panel good">
+      <h4>✅ Prompt bem estruturado</h4>
+      <div class="code-block">
+        <pre><code class="language-python">prompt = """
+Você é um especialista em climatologia.
+Explique, em dois parágrafos acessíveis
+para estudantes do ensino médio, as
+principais causas das chuvas no Brasil.
+"""</code></pre>
+      </div>
+      <p style="font-size:.76rem; color:var(--text-secondary); margin-top: 10px; line-height: 1.6;">
+        Papel definido + público-alvo + extensão = resposta precisa e contextualizada.
+      </p>
+    </div>
+  </div>
+
+  <p style="font-size:.76rem; color:var(--text-muted); margin-top: 12px; font-style: italic;">
+    Elementos de um bom prompt: papel (persona), contexto, tarefa específica, formato de saída esperado, restrições.
+  </p>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 14 — Parâmetros
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Configuração</div>
+    <h2>Parâmetros de geração</h2>
+    <p>Controlando o comportamento probabilístico do modelo</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="two-col">
+    <div class="code-block" style="margin:0;">
+      <div class="code-block-bar">
+        <div class="code-dots"><span></span><span></span><span></span></div>
+        Configuração avançada
+      </div>
+      <pre><code class="language-python">config = genai.GenerationConfig(
+    temperature=0.7,
+    max_output_tokens=512,
+    top_p=0.9,
+    top_k=40
+)
+
+modelo = genai.GenerativeModel(
+    "gemini-1.5-flash",
+    generation_config=config
+)
+
+resposta = modelo.generate_content(
+    "Crie um poema sobre IA."
+)
+print(resposta.text)</code></pre>
+    </div>
+    <div>
+      <ul class="a-list">
+        <li>
+          <div class="a-list-marker"></div>
+          <div><strong>temperature</strong> (0–1) — controla a "criatividade". Valores baixos = determinístico; valores altos = variado e criativo.</div>
+        </li>
+        <li>
+          <div class="a-list-marker amber"></div>
+          <div><strong>max_output_tokens</strong> — limita o comprimento máximo da resposta gerada.</div>
+        </li>
+        <li>
+          <div class="a-list-marker sage"></div>
+          <div><strong>top_p</strong> — amostragem por núcleo: considera apenas tokens que somam probabilidade p.</div>
+        </li>
+        <li>
+          <div class="a-list-marker"></div>
+          <div><strong>top_k</strong> — restringe a seleção aos k tokens mais prováveis em cada passo.</div>
+        </li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 15 — Chat multi-turno
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Chat</div>
+    <h2>Conversa com histórico — chat multi-turno</h2>
+    <p>Mantendo o contexto entre as mensagens da sessão</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="code-block">
+    <div class="code-block-bar">
+      <div class="code-dots"><span></span><span></span><span></span></div>
+      Sessão de chat com memória de contexto
+    </div>
+    <pre><code class="language-python">modelo = genai.GenerativeModel("gemini-1.5-flash")
+
+# start_chat() cria uma sessão que preserva o histórico
+chat = modelo.start_chat(history=[])
+
+# Turno 1
+resp1 = chat.send_message("Meu nome é Ana. Olá!")
+print(resp1.text)
+
+# Turno 2 — o modelo mantém o contexto anterior
+resp2 = chat.send_message("Qual é o meu nome?")
+print(resp2.text)  # → "Seu nome é Ana."
+
+# Inspecionar o histórico completo da sessão
+for msg in chat.history:
+    print(f"[{msg.role:10}] {msg.parts[0].text[:60]}...")</code></pre>
+  </div>
+
+  <div class="callout sage" style="margin-top: 12px;">
+    O histórico é mantido na memória da sessão Python. Em produção, ele deve ser persistido em banco de dados para conversas de longa duração.
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 16 — Capítulo 4
+══════════════════════════════════════════════ -->
+<section class="slide-chapter">
+  <div class="chapter-bg dark"></div>
+  <div class="chapter-bg-pattern"></div>
+  <div class="chapter-num">04</div>
+  <div class="chapter-content">
+    <div class="chapter-eyebrow">Capítulo 4 de 4</div>
+    <h2 class="chapter-title">Interface web<br>com Gradio</h2>
+    <p class="chapter-desc">Construindo aplicações interativas e acessíveis sobre modelos de linguagem em minutos.</p>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 17 — O que é Gradio?
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Framework</div>
+    <h2>Gradio</h2>
+    <p>Biblioteca Python para construção rápida de interfaces web para modelos de IA</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="callout amber">
+    🖥️ <strong>Gradio</strong> abstrai todo o código frontend (HTML, CSS, JS) e permite criar interfaces interativas a partir de funções Python puras — ideal para protótipos e demonstrações acadêmicas.
+  </div>
+
+  <div class="card-grid cols-3" style="margin-top: 18px;">
+    <div class="card blue">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">⚡</span>
+      <div class="card-label">Produtividade</div>
+      <div class="card-title">Rápido de implementar</div>
+      <div class="card-body">Interface completa em 5–10 linhas. Sem HTML, CSS ou JavaScript necessários.</div>
+    </div>
+    <div class="card sage">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">🔗</span>
+      <div class="card-label">Distribuição</div>
+      <div class="card-title">Link público automático</div>
+      <div class="card-body">Parâmetro <code>share=True</code> gera um URL público válido por 72h para compartilhamento.</div>
+    </div>
+    <div class="card amber">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">🧩</span>
+      <div class="card-label">Componentes</div>
+      <div class="card-title">Biblioteca rica</div>
+      <div class="card-body">Textbox, Dropdown, Slider, File, Audio, Image, Dataframe, Chatbot e mais.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 18 — Primeiro app Gradio
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Implementação</div>
+    <h2>Chatbot com Gemini + Gradio</h2>
+    <p>Interface de chat funcional em menos de 20 linhas de código</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="code-block">
+    <div class="code-block-bar">
+      <div class="code-dots"><span></span><span></span><span></span></div>
+      chatbot_gemini.py — implementação completa
+    </div>
+    <pre><code class="language-python">!pip install -q gradio google-generativeai
+
+import gradio as gr
+import google.generativeai as genai
+from google.colab import userdata
+
+genai.configure(api_key=userdata.get('GEMINI_API_KEY'))
+modelo = genai.GenerativeModel("gemini-1.5-flash")
+
+def responder(mensagem: str, historico: list) -> str:
+    """Callback chamado pelo Gradio a cada mensagem do usuário."""
+    resposta = modelo.generate_content(mensagem)
+    return resposta.text
+
+# gr.ChatInterface abstrai todo o gerenciamento de UI de chat
+app = gr.ChatInterface(
+    fn=responder,
+    title="Assistente com IA Generativa",
+    description="Faça qualquer pergunta ao modelo Gemini 1.5 Flash.",
+)
+
+app.launch(share=True)  # share=True → gera link público</code></pre>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 19 — Componentes Gradio
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Avançado</div>
+    <h2>Interface parametrizável com gr.Interface</h2>
+    <p>Adicionando controles de entrada para personalizar a geração</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="code-block">
+    <div class="code-block-bar">
+      <div class="code-dots"><span></span><span></span><span></span></div>
+      gerador_texto.py — múltiplos controles de entrada
+    </div>
+    <pre><code class="language-python">import gradio as gr
+
+def gerar_texto(tema: str, tom: str, paragrafos: int) -> str:
+    prompt = f"""Escreva sobre: {tema}
+Tom da escrita: {tom}
+Quantidade de parágrafos: {paragrafos}"""
+    return modelo.generate_content(prompt).text
+
+app = gr.Interface(
+    fn=gerar_texto,
+    inputs=[
+        gr.Textbox(label="Tema do texto", placeholder="Ex.: Inteligência Artificial na educação"),
+        gr.Dropdown(["Formal", "Informal", "Técnico", "Didático"], label="Tom"),
+        gr.Slider(minimum=1, maximum=5, value=2, step=1, label="Parágrafos"),
+    ],
+    outputs=gr.Textbox(label="Texto gerado", lines=10),
+    title="Gerador de Textos com IA",
+    flagging_mode="never"
+)
+
+app.launch(share=True)</code></pre>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 20 — Projeto prático
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Atividade</div>
+    <h2>Projeto prático — Assistente especializado</h2>
+    <p>Construa e publique seu próprio assistente com IA generativa</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="callout amber" style="margin-bottom: 18px;">
+    🎯 <strong>Objetivo:</strong> Crie um assistente especializado em um domínio de sua escolha (saúde, educação, programação, etc.) usando Gemini + Gradio e compartilhe o link público.
+  </div>
+
+  <ol class="n-list">
+    <li>Abra o Google Colab e crie um novo notebook</li>
+    <li>Configure sua API Key no painel Secrets (ícone 🔑)</li>
+    <li>Instale as dependências: <code>!pip install -q gradio google-generativeai</code></li>
+    <li>Implemente a função de resposta com um <strong>system prompt</strong> que define o papel do assistente</li>
+    <li>Monte a interface com <code>gr.ChatInterface</code> ou <code>gr.Interface</code></li>
+    <li>Adicione pelo menos um parâmetro de entrada extra (tom, idioma, nível técnico etc.)</li>
+    <li>Execute <code>app.launch(share=True)</code> e compartilhe o link com a turma</li>
+  </ol>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 21 — Boas práticas
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Boas Práticas</div>
+    <h2>Uso responsável de APIs de LLM</h2>
+    <p>Orientações técnicas e éticas para desenvolvimento com IA generativa</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="card-grid cols-2">
+    <div class="card blue">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">🔐</span>
+      <div class="card-label">Segurança</div>
+      <div class="card-title">Proteção de credenciais</div>
+      <div class="card-body">Utilize sempre variáveis de ambiente. Nunca exponha API Keys em repositórios públicos ou código compartilhado.</div>
+    </div>
+    <div class="card amber">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">💰</span>
+      <div class="card-label">Custo</div>
+      <div class="card-title">Monitoramento de uso</div>
+      <div class="card-body">Configure alertas de gasto no painel do provedor. Prefira modelos menores para tarefas de baixa complexidade.</div>
+    </div>
+    <div class="card sage">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">⚠️</span>
+      <div class="card-label">Confiabilidade</div>
+      <div class="card-title">Validação de saídas</div>
+      <div class="card-body">LLMs podem gerar informações incorretas (alucinações). Valide sempre respostas em contextos críticos.</div>
+    </div>
+    <div class="card neutral">
+      <div class="card-accent-top"></div>
+      <span class="card-icon">🛡️</span>
+      <div class="card-label">Resiliência</div>
+      <div class="card-title">Tratamento de erros</div>
+      <div class="card-body">Implemente <code>try/except</code> para lidar com falhas de rede, rate limits e respostas inválidas.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 22 — Síntese
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Síntese</div>
+    <h2>Principais conceitos abordados</h2>
+    <p>Consolidação dos aprendizados da aula</p>
+  </div>
+  <div class="rule"></div>
+
+  <ul class="a-list">
+    <li>
+      <div class="a-list-marker"></div>
+      <span><strong>API de LLM</strong> — interface que permite ao código enviar prompts e receber respostas de modelos de linguagem hospedados na nuvem, via requisições HTTP/REST.</span>
+    </li>
+    <li>
+      <div class="a-list-marker amber"></div>
+      <span><strong>API Key</strong> — token de autenticação essencial. Deve ser armazenado com segurança, jamais exposto em código-fonte público.</span>
+    </li>
+    <li>
+      <div class="a-list-marker sage"></div>
+      <span><strong>Google Colab</strong> — ambiente gratuito de notebooks Python na nuvem, com suporte a GPU e biblioteca <code>google-generativeai</code> pré-instalável em segundos.</span>
+    </li>
+    <li>
+      <div class="a-list-marker"></div>
+      <span><strong>Engenharia de Prompt</strong> — técnica de formulação de instruções precisas que maximizam a qualidade e relevância das respostas geradas pelo modelo.</span>
+    </li>
+    <li>
+      <div class="a-list-marker amber"></div>
+      <span><strong>Parâmetros de geração</strong> — <code>temperature</code>, <code>max_output_tokens</code>, <code>top_p</code> e <code>top_k</code> controlam o comportamento probabilístico do modelo.</span>
+    </li>
+    <li>
+      <div class="a-list-marker sage"></div>
+      <span><strong>Gradio</strong> — framework para construção de interfaces web interativas sobre funções Python, com suporte a link público para compartilhamento imediato.</span>
+    </li>
+  </ul>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 23 — Referências
+══════════════════════════════════════════════ -->
+<section>
+  <div class="slide-header">
+    <div class="section-tag">Referências</div>
+    <h2>Recursos para aprofundamento</h2>
+    <p>Documentação oficial e materiais complementares</p>
+  </div>
+  <div class="rule"></div>
+
+  <div class="card-grid cols-2">
+    <div class="card blue">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Google AI Studio</div>
+      <div class="card-title">Obtenção de API Key</div>
+      <div class="card-body">
+        <code style="color:var(--accent);">aistudio.google.com</code><br><br>
+        Plataforma para criar chaves, explorar modelos e testar prompts no Playground interativo.
+      </div>
+    </div>
+    <div class="card sage">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Google AI for Developers</div>
+      <div class="card-title">Documentação do Gemini</div>
+      <div class="card-body">
+        <code style="color:var(--sage);">ai.google.dev/docs</code><br><br>
+        Guia de referência da API, exemplos de código e lista completa de modelos disponíveis.
+      </div>
+    </div>
+    <div class="card amber">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Gradio</div>
+      <div class="card-title">Documentação oficial</div>
+      <div class="card-body">
+        <code style="color:var(--amber);">gradio.app/docs</code><br><br>
+        Referência completa de componentes, guias de início rápido e galeria de exemplos.
+      </div>
+    </div>
+    <div class="card neutral">
+      <div class="card-accent-top"></div>
+      <div class="card-label">Groq</div>
+      <div class="card-title">Modelos open-source gratuitos</div>
+      <div class="card-body">
+        <code style="color:var(--text-secondary);">console.groq.com</code><br><br>
+        API gratuita para Llama 3, Mistral e Gemma — alta velocidade de inferência.
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ══════════════════════════════════════════════
+     SLIDE 24 — Encerramento
+══════════════════════════════════════════════ -->
+<section class="slide-end">
+  <div class="end-bg"></div>
+  <div class="slide-end-content">
+    <div class="end-overline">IA · Módulo 1 · Unidade 4</div>
+    <h2 class="end-title">Mãos ao código.</h2>
+    <p class="end-subtitle">
+      O conhecimento técnico só se consolida na prática. Experimente, itere,
+      quebre coisas e aprenda com os erros — esse é o método mais eficaz em IA.
+    </p>
+    <div class="end-meta">
+      <div class="end-meta-item">
+        <span class="end-meta-label">Ministrada por</span>
+        <span class="end-meta-value">Ranyer Paiva</span>
+      </div>
+      <div class="end-meta-item">
+        <span class="end-meta-label">Ferramentas</span>
+        <span class="end-meta-value">Google Colab · Gemini API · Gradio</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+</div><!-- /.slides -->
+</div><!-- /.reveal -->
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/reveal.js/4.6.1/reveal.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/python.min.js"></script>
+
+<script>
+  Reveal.initialize({
+    hash: true,
+    slideNumber: 'c/t',
+    transition: 'slide',
+    transitionSpeed: 'fast',
+    backgroundTransition: 'fade',
+    controls: true,
+    progress: true,
+    center: false,
+    width: 1100,
+    height: 650,
+    margin: 0.04,
+    minScale: 0.2,
+    maxScale: 2.0,
+  });
+
+  Reveal.on('ready', () => {
+    document.querySelectorAll('pre code').forEach(block => {
+      hljs.highlightElement(block);
+    });
+  });
+</script>
+</body>
+</html>
